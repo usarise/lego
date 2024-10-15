@@ -70,7 +70,7 @@ type AccountsStorage struct {
 // NewAccountsStorage Creates a new AccountsStorage.
 func NewAccountsStorage(ctx *cli.Context) *AccountsStorage {
 	var userID string
-	noEmail := ctx.IsSet("no-email")
+	noEmail := ctx.IsSet(flgNoEmail)
 	if noEmail {
 		userID = "default"
 	} else {

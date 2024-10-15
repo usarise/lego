@@ -16,6 +16,7 @@ const (
 	flgServer                   = "server"
 	flgAcceptTOS                = "accept-tos"
 	flgEmail                    = "email"
+	flgNoEmail                  = "no-email"
 	flgCSR                      = "csr"
 	flgEAB                      = "eab"
 	flgKID                      = "kid"
@@ -73,7 +74,7 @@ func CreateFlags(defaultPath string) []cli.Flag {
 			Usage:   "Email used for registration and recovery contact.",
 		},
 		&cli.BoolFlag{
-			Name:    "no-email",
+			Name:    flgNoEmail,
 			Aliases: []string{"M"},
 			EnvVars: []string{"LEGO_NO_EMAIL"},
 			Usage:   "Create an ACME request without including an email address.",
