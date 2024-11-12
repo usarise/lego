@@ -1,8 +1,7 @@
-package cloudxns
+package corenetworks
 
 import (
 	"testing"
-	"time"
 
 	"github.com/go-acme/lego/v4/platform/tester"
 	"github.com/stretchr/testify/require"
@@ -10,10 +9,7 @@ import (
 
 const envDomain = envNamespace + "DOMAIN"
 
-var envTest = tester.NewEnvTest(
-	EnvAPIKey,
-	EnvSecretKey).
-	WithDomain(envDomain)
+var envTest = tester.NewEnvTest(EnvLogin, EnvPassword).WithDomain(envDomain)
 
 func TestNewDNSProvider(t *testing.T) {
 	testCases := []struct {
@@ -24,33 +20,23 @@ func TestNewDNSProvider(t *testing.T) {
 		{
 			desc: "success",
 			envVars: map[string]string{
-				EnvAPIKey:    "123",
-				EnvSecretKey: "456",
+				EnvLogin:    "user",
+				EnvPassword: "secret",
 			},
 		},
 		{
-			desc: "missing credentials",
+			desc: "missing login",
 			envVars: map[string]string{
-				EnvAPIKey:    "",
-				EnvSecretKey: "",
+				EnvPassword: "secret",
 			},
-			expected: "cloudxns: some credentials information are missing: CLOUDXNS_API_KEY,CLOUDXNS_SECRET_KEY",
+			expected: "corenetworks: some credentials information are missing: CORENETWORKS_LOGIN",
 		},
 		{
-			desc: "missing API key",
+			desc: "missing password",
 			envVars: map[string]string{
-				EnvAPIKey:    "",
-				EnvSecretKey: "456",
+				EnvLogin: "user",
 			},
-			expected: "cloudxns: some credentials information are missing: CLOUDXNS_API_KEY",
-		},
-		{
-			desc: "missing secret key",
-			envVars: map[string]string{
-				EnvAPIKey:    "123",
-				EnvSecretKey: "",
-			},
-			expected: "cloudxns: some credentials information are missing: CLOUDXNS_SECRET_KEY",
+			expected: "corenetworks: some credentials information are missing: CORENETWORKS_PASSWORD",
 		},
 	}
 
@@ -77,37 +63,33 @@ func TestNewDNSProvider(t *testing.T) {
 
 func TestNewDNSProviderConfig(t *testing.T) {
 	testCases := []struct {
-		desc      string
-		apiKey    string
-		secretKey string
-		expected  string
+		desc     string
+		login    string
+		password string
+		expected string
 	}{
 		{
-			desc:      "success",
-			apiKey:    "123",
-			secretKey: "456",
+			desc:     "success",
+			login:    "user",
+			password: "secret",
 		},
 		{
-			desc:     "missing credentials",
-			expected: "cloudxns: credentials missing: apiKey",
+			desc:     "missing login",
+			password: "secret",
+			expected: "corenetworks: credentials missing",
 		},
 		{
-			desc:      "missing api key",
-			secretKey: "456",
-			expected:  "cloudxns: credentials missing: apiKey",
-		},
-		{
-			desc:     "missing secret key",
-			apiKey:   "123",
-			expected: "cloudxns: credentials missing: secretKey",
+			desc:     "missing password",
+			login:    "user",
+			expected: "corenetworks: credentials missing",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.desc, func(t *testing.T) {
 			config := NewDefaultConfig()
-			config.APIKey = test.apiKey
-			config.SecretKey = test.secretKey
+			config.Login = test.login
+			config.Password = test.password
 
 			p, err := NewDNSProviderConfig(config)
 
@@ -144,8 +126,6 @@ func TestLiveCleanUp(t *testing.T) {
 	envTest.RestoreEnv()
 	provider, err := NewDNSProvider()
 	require.NoError(t, err)
-
-	time.Sleep(2 * time.Second)
 
 	err = provider.CleanUp(envTest.GetDomain(), "", "123d==")
 	require.NoError(t, err)

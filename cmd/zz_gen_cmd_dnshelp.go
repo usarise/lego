@@ -34,6 +34,7 @@ func allDNSCodes() string {
 		"cloudxns",
 		"conoha",
 		"constellix",
+		"corenetworks",
 		"cpanel",
 		"derak",
 		"desec",
@@ -115,6 +116,7 @@ func allDNSCodes() string {
 		"porkbun",
 		"rackspace",
 		"rcodezero",
+		"regfish",
 		"regru",
 		"rfc2136",
 		"rimuhosting",
@@ -130,6 +132,7 @@ func allDNSCodes() string {
 		"simply",
 		"sonic",
 		"stackpath",
+		"technitium",
 		"tencentcloud",
 		"timewebcloud",
 		"transip",
@@ -387,7 +390,7 @@ func displayDNSHelp(w io.Writer, name string) error {
 
 	case "brandit":
 		// generated from: providers/dns/brandit/brandit.toml
-		ew.writeln(`Configuration for Brandit.`)
+		ew.writeln(`Configuration for Brandit (deprecated).`)
 		ew.writeln(`Code:	'brandit'`)
 		ew.writeln(`Since:	'v4.11.0'`)
 		ew.writeln()
@@ -561,7 +564,7 @@ func displayDNSHelp(w io.Writer, name string) error {
 
 	case "cloudxns":
 		// generated from: providers/dns/cloudxns/cloudxns.toml
-		ew.writeln(`Configuration for CloudXNS.`)
+		ew.writeln(`Configuration for CloudXNS (Deprecated).`)
 		ew.writeln(`Code:	'cloudxns'`)
 		ew.writeln(`Since:	'v0.5.0'`)
 		ew.writeln()
@@ -623,6 +626,28 @@ func displayDNSHelp(w io.Writer, name string) error {
 
 		ew.writeln()
 		ew.writeln(`More information: https://go-acme.github.io/lego/dns/constellix`)
+
+	case "corenetworks":
+		// generated from: providers/dns/corenetworks/corenetworks.toml
+		ew.writeln(`Configuration for Core-Networks.`)
+		ew.writeln(`Code:	'corenetworks'`)
+		ew.writeln(`Since:	'v4.20.0'`)
+		ew.writeln()
+
+		ew.writeln(`Credentials:`)
+		ew.writeln(`	- "CORENETWORKS_LOGIN":	The username of the API account`)
+		ew.writeln(`	- "CORENETWORKS_PASSWORD":	The password`)
+		ew.writeln()
+
+		ew.writeln(`Additional Configuration:`)
+		ew.writeln(`	- "CORENETWORKS_HTTP_TIMEOUT":	API request timeout`)
+		ew.writeln(`	- "CORENETWORKS_POLLING_INTERVAL":	Time between DNS propagation check`)
+		ew.writeln(`	- "CORENETWORKS_PROPAGATION_TIMEOUT":	Maximum waiting time for DNS propagation`)
+		ew.writeln(`	- "CORENETWORKS_SEQUENCE_INTERVAL":	Time between sequential requests`)
+		ew.writeln(`	- "CORENETWORKS_TTL":	The TTL of the TXT record used for the DNS challenge`)
+
+		ew.writeln()
+		ew.writeln(`More information: https://go-acme.github.io/lego/dns/corenetworks`)
 
 	case "cpanel":
 		// generated from: providers/dns/cpanel/cpanel.toml
@@ -2352,6 +2377,26 @@ func displayDNSHelp(w io.Writer, name string) error {
 		ew.writeln()
 		ew.writeln(`More information: https://go-acme.github.io/lego/dns/rcodezero`)
 
+	case "regfish":
+		// generated from: providers/dns/regfish/regfish.toml
+		ew.writeln(`Configuration for Regfish.`)
+		ew.writeln(`Code:	'regfish'`)
+		ew.writeln(`Since:	'v4.20.0'`)
+		ew.writeln()
+
+		ew.writeln(`Credentials:`)
+		ew.writeln(`	- "REGFISH_API_KEY":	API key`)
+		ew.writeln()
+
+		ew.writeln(`Additional Configuration:`)
+		ew.writeln(`	- "REGFISH_HTTP_TIMEOUT":	API request timeout`)
+		ew.writeln(`	- "REGFISH_POLLING_INTERVAL":	Time between DNS propagation check`)
+		ew.writeln(`	- "REGFISH_PROPAGATION_TIMEOUT":	Maximum waiting time for DNS propagation`)
+		ew.writeln(`	- "REGFISH_TTL":	The TTL of the TXT record used for the DNS challenge`)
+
+		ew.writeln()
+		ew.writeln(`More information: https://go-acme.github.io/lego/dns/regfish`)
+
 	case "regru":
 		// generated from: providers/dns/regru/regru.toml
 		ew.writeln(`Configuration for reg.ru.`)
@@ -2384,9 +2429,9 @@ func displayDNSHelp(w io.Writer, name string) error {
 
 		ew.writeln(`Credentials:`)
 		ew.writeln(`	- "RFC2136_NAMESERVER":	Network address in the form "host" or "host:port"`)
-		ew.writeln(`	- "RFC2136_TSIG_ALGORITHM":	TSIG algorithm. See [miekg/dns#tsig.go](https://github.com/miekg/dns/blob/master/tsig.go) for supported values. To disable TSIG authentication, leave the 'RFC2136_TSIG*' variables unset.`)
-		ew.writeln(`	- "RFC2136_TSIG_KEY":	Name of the secret key as defined in DNS server configuration. To disable TSIG authentication, leave the 'RFC2136_TSIG*' variables unset.`)
-		ew.writeln(`	- "RFC2136_TSIG_SECRET":	Secret key payload. To disable TSIG authentication, leave the' RFC2136_TSIG*' variables unset.`)
+		ew.writeln(`	- "RFC2136_TSIG_ALGORITHM":	TSIG algorithm. See [miekg/dns#tsig.go](https://github.com/miekg/dns/blob/master/tsig.go) for supported values. To disable TSIG authentication, leave the 'RFC2136_TSIG_KEY' or 'RFC2136_TSIG_SECRET' variables unset.`)
+		ew.writeln(`	- "RFC2136_TSIG_KEY":	Name of the secret key as defined in DNS server configuration. To disable TSIG authentication, leave the 'RFC2136_TSIG_KEY' variable unset.`)
+		ew.writeln(`	- "RFC2136_TSIG_SECRET":	Secret key payload. To disable TSIG authentication, leave the 'RFC2136_TSIG_SECRET' variable unset.`)
 		ew.writeln()
 
 		ew.writeln(`Additional Configuration:`)
@@ -2394,6 +2439,7 @@ func displayDNSHelp(w io.Writer, name string) error {
 		ew.writeln(`	- "RFC2136_POLLING_INTERVAL":	Time between DNS propagation check`)
 		ew.writeln(`	- "RFC2136_PROPAGATION_TIMEOUT":	Maximum waiting time for DNS propagation`)
 		ew.writeln(`	- "RFC2136_SEQUENCE_INTERVAL":	Time between sequential requests`)
+		ew.writeln(`	- "RFC2136_TSIG_FILE":	Path to a key file generated by tsig-keygen`)
 		ew.writeln(`	- "RFC2136_TTL":	The TTL of the TXT record used for the DNS challenge`)
 
 		ew.writeln()
@@ -2682,6 +2728,27 @@ func displayDNSHelp(w io.Writer, name string) error {
 
 		ew.writeln()
 		ew.writeln(`More information: https://go-acme.github.io/lego/dns/stackpath`)
+
+	case "technitium":
+		// generated from: providers/dns/technitium/technitium.toml
+		ew.writeln(`Configuration for Technitium.`)
+		ew.writeln(`Code:	'technitium'`)
+		ew.writeln(`Since:	'v4.20.0'`)
+		ew.writeln()
+
+		ew.writeln(`Credentials:`)
+		ew.writeln(`	- "TECHNITIUM_API_TOKEN":	API token`)
+		ew.writeln(`	- "TECHNITIUM_SERVER_BASE_URL":	Server base URL`)
+		ew.writeln()
+
+		ew.writeln(`Additional Configuration:`)
+		ew.writeln(`	- "TECHNITIUM_HTTP_TIMEOUT":	API request timeout`)
+		ew.writeln(`	- "TECHNITIUM_POLLING_INTERVAL":	Time between DNS propagation check`)
+		ew.writeln(`	- "TECHNITIUM_PROPAGATION_TIMEOUT":	Maximum waiting time for DNS propagation`)
+		ew.writeln(`	- "TECHNITIUM_TTL":	The TTL of the TXT record used for the DNS challenge`)
+
+		ew.writeln()
+		ew.writeln(`More information: https://go-acme.github.io/lego/dns/technitium`)
 
 	case "tencentcloud":
 		// generated from: providers/dns/tencentcloud/tencentcloud.toml

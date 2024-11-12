@@ -5,7 +5,7 @@ project_name: lego
 builds:
   - binary: lego
 
-    main: ./cmd/lego/main.go
+    main: ./cmd/lego/
     env:
       - CGO_ENABLED=0
     flags:
@@ -14,9 +14,9 @@ builds:
       - -s -w -X main.version={{.Version}}
 
     goos:
-      - windows
-      - darwin
       - linux
+      - darwin
+      - windows
       - freebsd
       - openbsd
       - solaris

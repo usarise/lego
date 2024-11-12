@@ -28,6 +28,7 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns/cloudxns"
 	"github.com/go-acme/lego/v4/providers/dns/conoha"
 	"github.com/go-acme/lego/v4/providers/dns/constellix"
+	"github.com/go-acme/lego/v4/providers/dns/corenetworks"
 	"github.com/go-acme/lego/v4/providers/dns/cpanel"
 	"github.com/go-acme/lego/v4/providers/dns/derak"
 	"github.com/go-acme/lego/v4/providers/dns/desec"
@@ -109,6 +110,7 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns/porkbun"
 	"github.com/go-acme/lego/v4/providers/dns/rackspace"
 	"github.com/go-acme/lego/v4/providers/dns/rcodezero"
+	"github.com/go-acme/lego/v4/providers/dns/regfish"
 	"github.com/go-acme/lego/v4/providers/dns/regru"
 	"github.com/go-acme/lego/v4/providers/dns/rfc2136"
 	"github.com/go-acme/lego/v4/providers/dns/rimuhosting"
@@ -124,6 +126,7 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns/simply"
 	"github.com/go-acme/lego/v4/providers/dns/sonic"
 	"github.com/go-acme/lego/v4/providers/dns/stackpath"
+	"github.com/go-acme/lego/v4/providers/dns/technitium"
 	"github.com/go-acme/lego/v4/providers/dns/tencentcloud"
 	"github.com/go-acme/lego/v4/providers/dns/timewebcloud"
 	"github.com/go-acme/lego/v4/providers/dns/transip"
@@ -194,6 +197,8 @@ func NewDNSChallengeProviderByName(name string) (challenge.Provider, error) {
 		return conoha.NewDNSProvider()
 	case "constellix":
 		return constellix.NewDNSProvider()
+	case "corenetworks":
+		return corenetworks.NewDNSProvider()
 	case "cpanel":
 		return cpanel.NewDNSProvider()
 	case "derak":
@@ -356,6 +361,8 @@ func NewDNSChallengeProviderByName(name string) (challenge.Provider, error) {
 		return rackspace.NewDNSProvider()
 	case "rcodezero":
 		return rcodezero.NewDNSProvider()
+	case "regfish":
+		return regfish.NewDNSProvider()
 	case "regru":
 		return regru.NewDNSProvider()
 	case "rfc2136":
@@ -386,6 +393,8 @@ func NewDNSChallengeProviderByName(name string) (challenge.Provider, error) {
 		return sonic.NewDNSProvider()
 	case "stackpath":
 		return stackpath.NewDNSProvider()
+	case "technitium":
+		return technitium.NewDNSProvider()
 	case "tencentcloud":
 		return tencentcloud.NewDNSProvider()
 	case "timewebcloud":
