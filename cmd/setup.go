@@ -93,7 +93,7 @@ func getKeyType(ctx *cli.Context) certcrypto.KeyType {
 func getEmail(ctx *cli.Context) string {
 	email := ctx.String(flgEmail)
 	if email == "" {
-		log.Fatalf("You have to pass an account (email address) to the program using --%s or -m", flgEmail)
+		log.Fatalf("You have to pass an account (email address) to the program using --%s or -m, or use --%s or -M to disable including an email in the ACME request.", flgEmail, flgNoEmail)
 	}
 	return email
 }

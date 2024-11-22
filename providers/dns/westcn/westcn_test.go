@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:providers/dns/westcn/westcn_test.go
 package westcn
+========
+package technitium
+>>>>>>>> master:providers/dns/technitium/technitium_test.go
 
 import (
 	"testing"
@@ -9,7 +13,11 @@ import (
 
 const envDomain = envNamespace + "DOMAIN"
 
+<<<<<<<< HEAD:providers/dns/westcn/westcn_test.go
 var envTest = tester.NewEnvTest(EnvUsername, EnvPassword).WithDomain(envDomain)
+========
+var envTest = tester.NewEnvTest(EnvServerBaseURL, EnvAPIToken).WithDomain(envDomain)
+>>>>>>>> master:providers/dns/technitium/technitium_test.go
 
 func TestNewDNSProvider(t *testing.T) {
 	testCases := []struct {
@@ -20,6 +28,7 @@ func TestNewDNSProvider(t *testing.T) {
 		{
 			desc: "success",
 			envVars: map[string]string{
+<<<<<<<< HEAD:providers/dns/westcn/westcn_test.go
 				EnvUsername: "user",
 				EnvPassword: "secret",
 			},
@@ -39,11 +48,36 @@ func TestNewDNSProvider(t *testing.T) {
 				EnvPassword: "",
 			},
 			expected: "westcn: some credentials information are missing: WESTCN_PASSWORD",
+========
+				EnvServerBaseURL: "https://localhost:5380",
+				EnvAPIToken:      "secret",
+			},
+		},
+		{
+			desc: "missing server base URL",
+			envVars: map[string]string{
+				EnvServerBaseURL: "",
+				EnvAPIToken:      "secret",
+			},
+			expected: "technitium: some credentials information are missing: TECHNITIUM_SERVER_BASE_URL",
+		},
+		{
+			desc: "missing token",
+			envVars: map[string]string{
+				EnvServerBaseURL: "https://localhost:5380",
+				EnvAPIToken:      "",
+			},
+			expected: "technitium: some credentials information are missing: TECHNITIUM_API_TOKEN",
+>>>>>>>> master:providers/dns/technitium/technitium_test.go
 		},
 		{
 			desc:     "missing credentials",
 			envVars:  map[string]string{},
+<<<<<<<< HEAD:providers/dns/westcn/westcn_test.go
 			expected: "westcn: some credentials information are missing: WESTCN_USERNAME,WESTCN_PASSWORD",
+========
+			expected: "technitium: some credentials information are missing: TECHNITIUM_SERVER_BASE_URL,TECHNITIUM_API_TOKEN",
+>>>>>>>> master:providers/dns/technitium/technitium_test.go
 		},
 	}
 
@@ -71,6 +105,7 @@ func TestNewDNSProvider(t *testing.T) {
 func TestNewDNSProviderConfig(t *testing.T) {
 	testCases := []struct {
 		desc     string
+<<<<<<<< HEAD:providers/dns/westcn/westcn_test.go
 		username string
 		password string
 		expected string
@@ -93,14 +128,43 @@ func TestNewDNSProviderConfig(t *testing.T) {
 		{
 			desc:     "missing credentials",
 			expected: "westcn: credentials missing",
+========
+		baseURL  string
+		token    string
+		expected string
+	}{
+		{
+			desc:    "success",
+			baseURL: "https://localhost:5380",
+			token:   "secret",
+		},
+		{
+			desc:     "missing server base URL",
+			token:    "secret",
+			expected: "technitium: missing server URL",
+		},
+		{
+			desc:     "missing token",
+			baseURL:  "https://localhost:5380",
+			expected: "technitium: missing credentials",
+		},
+		{
+			desc:     "missing credentials",
+			expected: "technitium: missing credentials",
+>>>>>>>> master:providers/dns/technitium/technitium_test.go
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.desc, func(t *testing.T) {
 			config := NewDefaultConfig()
+<<<<<<<< HEAD:providers/dns/westcn/westcn_test.go
 			config.Username = test.username
 			config.Password = test.password
+========
+			config.BaseURL = test.baseURL
+			config.APIToken = test.token
+>>>>>>>> master:providers/dns/technitium/technitium_test.go
 
 			p, err := NewDNSProviderConfig(config)
 
