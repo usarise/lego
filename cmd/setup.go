@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -14,12 +13,22 @@ import (
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/go-acme/lego/v4/log"
 	"github.com/go-acme/lego/v4/registration"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/urfave/cli/v2"
 )
 
 const filePerm os.FileMode = 0o600
 
-func setup(ctx *cli.Context, accountsStorage *AccountsStorage) (*Account, *lego.Client) {
+// setupClient creates a new client with challenge settings.
+func setupClient(ctx *cli.Context, account *Account, keyType certcrypto.KeyType) *lego.Client {
+	client := newClient(ctx, account, keyType)
+
+	setupChallenges(ctx, client)
+
+	return client
+}
+
+func setupAccount(ctx *cli.Context, accountsStorage *AccountsStorage) (*Account, certcrypto.KeyType) {
 	keyType := getKeyType(ctx)
 	privateKey := accountsStorage.GetPrivateKey(keyType)
 
@@ -30,9 +39,7 @@ func setup(ctx *cli.Context, accountsStorage *AccountsStorage) (*Account, *lego.
 		account = &Account{Email: accountsStorage.GetUserID(), key: privateKey}
 	}
 
-	client := newClient(ctx, account, keyType)
-
-	return account, client
+	return account, keyType
 }
 
 func newClient(ctx *cli.Context, acc registration.User, keyType certcrypto.KeyType) *lego.Client {
@@ -51,10 +58,19 @@ func newClient(ctx *cli.Context, acc registration.User, keyType certcrypto.KeyTy
 	}
 
 	if ctx.Bool(flgTLSSkipVerify) {
-		config.HTTPClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		defaultTransport, ok := config.HTTPClient.Transport.(*http.Transport)
+		if ok { // This is always true because the default client used by the CLI defined the transport.
+			tr := defaultTransport.Clone()
+			tr.TLSClientConfig.InsecureSkipVerify = true
+			config.HTTPClient.Transport = tr
 		}
 	}
+
+	retryClient := retryablehttp.NewClient()
+	retryClient.RetryMax = 5
+	retryClient.HTTPClient = config.HTTPClient
+
+	config.HTTPClient = retryClient.StandardClient()
 
 	client, err := lego.NewClient(config)
 	if err != nil {
