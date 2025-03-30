@@ -35,6 +35,7 @@ body:
     attributes:
       label: How do you use lego?
       options:
+        - I don't know
         - Library
         - Binary
         - Docker image
@@ -44,6 +45,7 @@ body:
         - Through Bitnami
         - Through 1Panel
         - Through Zoraxy
+        - go install
         - Other
     validations:
       required: true
@@ -64,8 +66,9 @@ body:
   - type: textarea
     id: version
     attributes:
-      label: Version of lego
+      label: Effective version of lego
       description: |-
+        `latest` or `dev` are not effective versions.
         ```console
         $ lego --version
         ```

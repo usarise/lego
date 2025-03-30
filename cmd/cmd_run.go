@@ -20,9 +20,12 @@ const (
 	flgMustStaple                     = "must-staple"
 	flgNotBefore                      = "not-before"
 	flgNotAfter                       = "not-after"
+	flgPrivateKey                     = "private-key"
 	flgPreferredChain                 = "preferred-chain"
+	flgProfile                        = "profile"
 	flgAlwaysDeactivateAuthorizations = "always-deactivate-authorizations"
 	flgRunHook                        = "run-hook"
+	flgRunHookTimeout                 = "run-hook-timeout"
 )
 
 func createRun() *cli.Command {
@@ -63,9 +66,17 @@ func createRun() *cli.Command {
 				Layout: time.RFC3339,
 			},
 			&cli.StringFlag{
+				Name:  flgPrivateKey,
+				Usage: "Path to private key (in PEM encoding) for the certificate. By default, the private key is generated.",
+			},
+			&cli.StringFlag{
 				Name: flgPreferredChain,
 				Usage: "If the CA offers multiple certificate chains, prefer the chain with an issuer matching this Subject Common Name." +
 					" If no match, the default offered chain will be used.",
+			},
+			&cli.StringFlag{
+				Name:  flgProfile,
+				Usage: "If the CA offers multiple certificate profiles (draft-aaron-acme-profiles), choose this one.",
 			},
 			&cli.StringFlag{
 				Name:  flgAlwaysDeactivateAuthorizations,
@@ -75,18 +86,23 @@ func createRun() *cli.Command {
 				Name:  flgRunHook,
 				Usage: "Define a hook. The hook is executed when the certificates are effectively created.",
 			},
+			&cli.DurationFlag{
+				Name:  flgRunHookTimeout,
+				Usage: "Define the timeout for the hook execution.",
+				Value: 2 * time.Minute,
+			},
 		},
 	}
 }
 
 const rootPathWarningMessage = `!!!! HEADS UP !!!!
 
-Your account credentials have been saved in your Let's Encrypt
+Your account credentials have been saved in your
 configuration directory at "%s".
 
 You should make a secure backup of this folder now. This
 configuration directory will also contain certificates and
-private keys obtained from Let's Encrypt so making regular
+private keys obtained from the ACME server so making regular
 backups of this folder is ideal.
 `
 
@@ -124,12 +140,12 @@ func run(ctx *cli.Context) error {
 	certsStorage.SaveResource(cert)
 
 	meta := map[string]string{
-		renewEnvAccountEmail: account.Email,
+		hookEnvAccountEmail: account.Email,
 	}
 
 	addPathToMetadata(meta, cert.Domain, cert, certsStorage)
 
-	return launchHook(ctx.String(flgRunHook), meta)
+	return launchHook(ctx.String(flgRunHook), ctx.Duration(flgRunHookTimeout), meta)
 }
 
 func handleTOS(ctx *cli.Context, client *lego.Client) bool {
@@ -192,20 +208,21 @@ func obtainCertificate(ctx *cli.Context, client *lego.Client) (*certificate.Reso
 		// obtain a certificate, generating a new private key
 		request := certificate.ObtainRequest{
 			Domains:                        domains,
-			Bundle:                         bundle,
 			MustStaple:                     ctx.Bool(flgMustStaple),
+			NotBefore:                      getTime(ctx, flgNotBefore),
+			NotAfter:                       getTime(ctx, flgNotAfter),
+			Bundle:                         bundle,
 			PreferredChain:                 ctx.String(flgPreferredChain),
+			Profile:                        ctx.String(flgProfile),
 			AlwaysDeactivateAuthorizations: ctx.Bool(flgAlwaysDeactivateAuthorizations),
 		}
 
-		notBefore := ctx.Timestamp(flgNotBefore)
-		if notBefore != nil {
-			request.NotBefore = *notBefore
-		}
-
-		notAfter := ctx.Timestamp(flgNotAfter)
-		if notAfter != nil {
-			request.NotAfter = *notAfter
+		if ctx.IsSet(flgPrivateKey) {
+			var err error
+			request.PrivateKey, err = loadPrivateKey(ctx.String(flgPrivateKey))
+			if err != nil {
+				return nil, fmt.Errorf("load private key: %w", err)
+			}
 		}
 
 		return client.Certificate.Obtain(request)
@@ -224,7 +241,16 @@ func obtainCertificate(ctx *cli.Context, client *lego.Client) (*certificate.Reso
 		NotAfter:                       getTime(ctx, flgNotAfter),
 		Bundle:                         bundle,
 		PreferredChain:                 ctx.String(flgPreferredChain),
+		Profile:                        ctx.String(flgProfile),
 		AlwaysDeactivateAuthorizations: ctx.Bool(flgAlwaysDeactivateAuthorizations),
+	}
+
+	if ctx.IsSet(flgPrivateKey) {
+		var err error
+		request.PrivateKey, err = loadPrivateKey(ctx.String(flgPrivateKey))
+		if err != nil {
+			return nil, fmt.Errorf("load private key: %w", err)
+		}
 	}
 
 	return client.Certificate.ObtainForCSR(request)

@@ -55,9 +55,10 @@ More information [here]({{% ref "dns#configuration-and-credentials" %}}).
 
 | Environment Variable Name | Description |
 |--------------------------------|-------------|
-| `AKAMAI_POLLING_INTERVAL` | Time between DNS propagation check. Default: 15 seconds |
-| `AKAMAI_PROPAGATION_TIMEOUT` | Maximum waiting time for DNS propagation. Default: 3 minutes |
-| `AKAMAI_TTL` | The TTL of the TXT record used for the DNS challenge |
+| `AKAMAI_ACCOUNT_SWITCH_KEY` | Target account ID when the DNS zone and credentials belong to different accounts |
+| `AKAMAI_POLLING_INTERVAL` | Time between DNS propagation check in seconds (Default: 15) |
+| `AKAMAI_PROPAGATION_TIMEOUT` | Maximum waiting time for DNS propagation in seconds (Default: 180) |
+| `AKAMAI_TTL` | The TTL of the TXT record used for the DNS challenge in seconds (Default: 120) |
 
 The environment variable names can be suffixed by `_FILE` to reference a file instead of a value.
 More information [here]({{% ref "dns#configuration-and-credentials" %}}).
@@ -88,6 +89,7 @@ See also:
 - [.edgerc Format](https://developer.akamai.com/legacy/introduction/Conf_Client.html#edgercformat)
 - [API Client Authentication](https://developer.akamai.com/legacy/introduction/Client_Auth.html)
 - [Config from Env](https://github.com/akamai/AkamaiOPEN-edgegrid-golang/blob/master/pkg/edgegrid/config.go#L118)
+- [Manage many accounts](https://techdocs.akamai.com/developer/docs/manage-many-accounts-with-one-api-client)
 
 
 

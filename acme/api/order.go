@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net"
 	"time"
 
@@ -13,6 +14,12 @@ import (
 type OrderOptions struct {
 	NotBefore time.Time
 	NotAfter  time.Time
+
+	// A string uniquely identifying the profile
+	// which will be used to affect issuance of the certificate requested by this Order.
+	// - https://www.ietf.org/id/draft-aaron-acme-profiles-00.html#section-4
+	Profile string
+
 	// A string uniquely identifying a previously-issued certificate which this
 	// order is intended to replace.
 	// - https://datatracker.ietf.org/doc/html/draft-ietf-acme-ari-03#section-5
@@ -53,12 +60,29 @@ func (o *OrderService) NewWithOptions(domains []string, opts *OrderOptions) (acm
 		if o.core.GetDirectory().RenewalInfo != "" {
 			orderReq.Replaces = opts.ReplacesCertID
 		}
+
+		if opts.Profile != "" {
+			orderReq.Profile = opts.Profile
+		}
 	}
 
 	var order acme.Order
 	resp, err := o.core.post(o.core.GetDirectory().NewOrderURL, orderReq, &order)
 	if err != nil {
-		return acme.ExtendedOrder{}, err
+		are := &acme.AlreadyReplacedError{}
+		if !errors.As(err, &are) {
+			return acme.ExtendedOrder{}, err
+		}
+
+		// If the Server rejects the request because the identified certificate has already been marked as replaced,
+		// it MUST return an HTTP 409 (Conflict) with a problem document of type "alreadyReplaced" (see Section 7.4).
+		// https://datatracker.ietf.org/doc/html/draft-ietf-acme-ari-08#section-5
+		orderReq.Replaces = ""
+
+		resp, err = o.core.post(o.core.GetDirectory().NewOrderURL, orderReq, &order)
+		if err != nil {
+			return acme.ExtendedOrder{}, err
+		}
 	}
 
 	return acme.ExtendedOrder{
@@ -95,7 +119,7 @@ func (o *OrderService) UpdateForCSR(orderURL string, csr []byte) (acme.ExtendedO
 	}
 
 	if order.Status == acme.StatusInvalid {
-		return acme.ExtendedOrder{}, order.Error
+		return acme.ExtendedOrder{}, fmt.Errorf("invalid order: %w", order.Err())
 	}
 
 	return acme.ExtendedOrder{Order: order}, nil

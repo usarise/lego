@@ -8,6 +8,7 @@ import (
 	"github.com/go-acme/lego/v4/challenge"
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/go-acme/lego/v4/providers/dns/acmedns"
+	"github.com/go-acme/lego/v4/providers/dns/active24"
 	"github.com/go-acme/lego/v4/providers/dns/alidns"
 	"github.com/go-acme/lego/v4/providers/dns/allinkl"
 	"github.com/go-acme/lego/v4/providers/dns/arvancloud"
@@ -17,6 +18,7 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns/azuredns"
 	"github.com/go-acme/lego/v4/providers/dns/bindman"
 	"github.com/go-acme/lego/v4/providers/dns/bluecat"
+	"github.com/go-acme/lego/v4/providers/dns/bookmyname"
 	"github.com/go-acme/lego/v4/providers/dns/brandit"
 	"github.com/go-acme/lego/v4/providers/dns/bunny"
 	"github.com/go-acme/lego/v4/providers/dns/checkdomain"
@@ -51,6 +53,7 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns/epik"
 	"github.com/go-acme/lego/v4/providers/dns/exec"
 	"github.com/go-acme/lego/v4/providers/dns/exoscale"
+	"github.com/go-acme/lego/v4/providers/dns/f5xc"
 	"github.com/go-acme/lego/v4/providers/dns/freemyip"
 	"github.com/go-acme/lego/v4/providers/dns/gandi"
 	"github.com/go-acme/lego/v4/providers/dns/gandiv5"
@@ -88,8 +91,10 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns/mailinabox"
 	"github.com/go-acme/lego/v4/providers/dns/manageengine"
 	"github.com/go-acme/lego/v4/providers/dns/metaname"
+	"github.com/go-acme/lego/v4/providers/dns/metaregistrar"
 	"github.com/go-acme/lego/v4/providers/dns/mijnhost"
 	"github.com/go-acme/lego/v4/providers/dns/mittwald"
+	"github.com/go-acme/lego/v4/providers/dns/myaddr"
 	"github.com/go-acme/lego/v4/providers/dns/mydnsjp"
 	"github.com/go-acme/lego/v4/providers/dns/mythicbeasts"
 	"github.com/go-acme/lego/v4/providers/dns/namecheap"
@@ -127,6 +132,7 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns/shellrent"
 	"github.com/go-acme/lego/v4/providers/dns/simply"
 	"github.com/go-acme/lego/v4/providers/dns/sonic"
+	"github.com/go-acme/lego/v4/providers/dns/spaceship"
 	"github.com/go-acme/lego/v4/providers/dns/stackpath"
 	"github.com/go-acme/lego/v4/providers/dns/technitium"
 	"github.com/go-acme/lego/v4/providers/dns/tencentcloud"
@@ -160,6 +166,8 @@ func NewDNSChallengeProviderByName(name string) (challenge.Provider, error) {
 		return dns01.NewDNSProviderManual()
 	case "acme-dns", "acmedns":
 		return acmedns.NewDNSProvider()
+	case "active24":
+		return active24.NewDNSProvider()
 	case "alidns":
 		return alidns.NewDNSProvider()
 	case "allinkl":
@@ -178,6 +186,8 @@ func NewDNSChallengeProviderByName(name string) (challenge.Provider, error) {
 		return bindman.NewDNSProvider()
 	case "bluecat":
 		return bluecat.NewDNSProvider()
+	case "bookmyname":
+		return bookmyname.NewDNSProvider()
 	case "brandit":
 		return brandit.NewDNSProvider()
 	case "bunny":
@@ -246,6 +256,8 @@ func NewDNSChallengeProviderByName(name string) (challenge.Provider, error) {
 		return exec.NewDNSProvider()
 	case "exoscale":
 		return exoscale.NewDNSProvider()
+	case "f5xc":
+		return f5xc.NewDNSProvider()
 	case "freemyip":
 		return freemyip.NewDNSProvider()
 	case "gandi":
@@ -320,10 +332,14 @@ func NewDNSChallengeProviderByName(name string) (challenge.Provider, error) {
 		return manageengine.NewDNSProvider()
 	case "metaname":
 		return metaname.NewDNSProvider()
+	case "metaregistrar":
+		return metaregistrar.NewDNSProvider()
 	case "mijnhost":
 		return mijnhost.NewDNSProvider()
 	case "mittwald":
 		return mittwald.NewDNSProvider()
+	case "myaddr":
+		return myaddr.NewDNSProvider()
 	case "mydnsjp":
 		return mydnsjp.NewDNSProvider()
 	case "mythicbeasts":
@@ -398,6 +414,8 @@ func NewDNSChallengeProviderByName(name string) (challenge.Provider, error) {
 		return simply.NewDNSProvider()
 	case "sonic":
 		return sonic.NewDNSProvider()
+	case "spaceship":
+		return spaceship.NewDNSProvider()
 	case "stackpath":
 		return stackpath.NewDNSProvider()
 	case "technitium":

@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/pem"
-	"regexp"
 	"testing"
 	"time"
 
@@ -22,7 +21,7 @@ func TestGeneratePrivateKey(t *testing.T) {
 }
 
 func TestGenerateCSR(t *testing.T) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 512)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err, "Error generating private key")
 
 	type expected struct {
@@ -33,55 +32,75 @@ func TestGenerateCSR(t *testing.T) {
 	testCases := []struct {
 		desc       string
 		privateKey crypto.PrivateKey
-		domain     string
-		san        []string
-		mustStaple bool
+		opts       CSROptions
 		expected   expected
 	}{
 		{
 			desc:       "without SAN (nil)",
 			privateKey: privateKey,
-			domain:     "lego.acme",
-			mustStaple: true,
-			expected:   expected{len: 245},
+			opts: CSROptions{
+				Domain:     "lego.acme",
+				MustStaple: true,
+			},
+			expected: expected{len: 379},
 		},
 		{
 			desc:       "without SAN (empty)",
 			privateKey: privateKey,
-			domain:     "lego.acme",
-			san:        []string{},
-			mustStaple: true,
-			expected:   expected{len: 245},
+			opts: CSROptions{
+				Domain:     "lego.acme",
+				SAN:        []string{},
+				MustStaple: true,
+			},
+			expected: expected{len: 379},
 		},
 		{
 			desc:       "with SAN",
 			privateKey: privateKey,
-			domain:     "lego.acme",
-			san:        []string{"a.lego.acme", "b.lego.acme", "c.lego.acme"},
-			mustStaple: true,
-			expected:   expected{len: 296},
+			opts: CSROptions{
+				Domain:     "lego.acme",
+				SAN:        []string{"a.lego.acme", "b.lego.acme", "c.lego.acme"},
+				MustStaple: true,
+			},
+			expected: expected{len: 430},
 		},
 		{
 			desc:       "no domain",
 			privateKey: privateKey,
-			domain:     "",
-			mustStaple: true,
-			expected:   expected{len: 225},
+			opts: CSROptions{
+				Domain:     "",
+				MustStaple: true,
+			},
+			expected: expected{len: 359},
 		},
 		{
 			desc:       "no domain with SAN",
 			privateKey: privateKey,
-			domain:     "",
-			san:        []string{"a.lego.acme", "b.lego.acme", "c.lego.acme"},
-			mustStaple: true,
-			expected:   expected{len: 276},
+			opts: CSROptions{
+				Domain:     "",
+				SAN:        []string{"a.lego.acme", "b.lego.acme", "c.lego.acme"},
+				MustStaple: true,
+			},
+			expected: expected{len: 409},
 		},
 		{
 			desc:       "private key nil",
 			privateKey: nil,
-			domain:     "fizz.buzz",
-			mustStaple: true,
-			expected:   expected{error: true},
+			opts: CSROptions{
+				Domain:     "fizz.buzz",
+				MustStaple: true,
+			},
+			expected: expected{error: true},
+		},
+		{
+			desc:       "with email addresses",
+			privateKey: privateKey,
+			opts: CSROptions{
+				Domain:         "example.com",
+				SAN:            []string{"example.org"},
+				EmailAddresses: []string{"foo@example.com", "bar@example.com"},
+			},
+			expected: expected{len: 421},
 		},
 	}
 
@@ -89,7 +108,7 @@ func TestGenerateCSR(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
 
-			csr, err := GenerateCSR(test.privateKey, test.domain, test.san, test.mustStaple)
+			csr, err := CreateCSR(test.privateKey, test.opts)
 
 			if test.expected.error {
 				require.Error(t, err)
@@ -104,17 +123,17 @@ func TestGenerateCSR(t *testing.T) {
 }
 
 func TestPEMEncode(t *testing.T) {
-	buf := bytes.NewBufferString("TestingRSAIsSoMuchFun")
-
-	reader := MockRandReader{b: buf}
-	key, err := rsa.GenerateKey(reader, 32)
+	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err, "Error generating private key")
 
 	data := PEMEncode(key)
 	require.NotNil(t, data)
 
-	exp := regexp.MustCompile(`^-----BEGIN RSA PRIVATE KEY-----\s+\S{60,}\s+-----END RSA PRIVATE KEY-----\s+`)
-	assert.Regexp(t, exp, string(data))
+	p, rest := pem.Decode(data)
+
+	assert.Equal(t, "RSA PRIVATE KEY", p.Type)
+	assert.Empty(t, rest)
+	assert.Empty(t, p.Headers)
 }
 
 func TestParsePEMCertificate(t *testing.T) {
@@ -149,10 +168,12 @@ func TestParsePEMPrivateKey(t *testing.T) {
 
 	pemPrivateKey := PEMEncode(privateKey)
 
-	// Decoding a key should work and create an identical key to the original
+	// Decoding a key should work and create an identical RSA key to the original,
+	// ignoring precomputed values.
 	decoded, err := ParsePEMPrivateKey(pemPrivateKey)
 	require.NoError(t, err)
-	assert.Equal(t, decoded, privateKey)
+	decodedRsaPrivateKey := decoded.(*rsa.PrivateKey)
+	require.True(t, decodedRsaPrivateKey.Equal(privateKey))
 
 	// Decoding a PEM block that doesn't contain a private key should error
 	_, err = ParsePEMPrivateKey(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE"}))
@@ -165,12 +186,4 @@ func TestParsePEMPrivateKey(t *testing.T) {
 	// Decoding non-PEM input should return an error
 	_, err = ParsePEMPrivateKey([]byte("This is not PEM"))
 	require.Errorf(t, err, "Expected to return an error for non-PEM input")
-}
-
-type MockRandReader struct {
-	b *bytes.Buffer
-}
-
-func (r MockRandReader) Read(p []byte) (int, error) {
-	return r.b.Read(p)
 }

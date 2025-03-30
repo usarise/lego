@@ -53,7 +53,7 @@ func NewDefaultConfig() *Config {
 		PropagationTimeout: env.GetOrDefaultSecond(EnvPropagationTimeout, dns01.DefaultPropagationTimeout),
 		PollingInterval:    env.GetOrDefaultSecond(EnvPollingInterval, dns01.DefaultPollingInterval),
 		HTTPClient: &http.Client{
-			Timeout: env.GetOrDefaultSecond(EnvHTTPTimeout, 60*time.Second),
+			Timeout: env.GetOrDefaultSecond(EnvHTTPTimeout, time.Minute),
 		},
 	}
 }
@@ -168,7 +168,7 @@ func (d *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 	}
 
 	var deleteHash *string
-	for _, record := range domainRecords.RecordCollection.Items {
+	for _, record := range domainRecords.Items {
 		if record.Rdata != nil && *record.Rdata == `"`+info.Value+`"` {
 			deleteHash = record.RecordHash
 			break

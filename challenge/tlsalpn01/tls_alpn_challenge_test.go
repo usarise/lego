@@ -66,7 +66,7 @@ func TestChallenge(t *testing.T) {
 		return nil
 	}
 
-	privateKey, err := rsa.GenerateKey(rand.Reader, 512)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err, "Could not generate test key")
 
 	core, err := api.New(http.DefaultClient, "lego-test", apiURL+"/dir", "", privateKey)
@@ -95,7 +95,7 @@ func TestChallenge(t *testing.T) {
 func TestChallengeInvalidPort(t *testing.T) {
 	_, apiURL := tester.SetupFakeAPI(t)
 
-	privateKey, err := rsa.GenerateKey(rand.Reader, 128)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err, "Could not generate test key")
 
 	core, err := api.New(http.DefaultClient, "lego-test", apiURL+"/dir", "", privateKey)
@@ -162,12 +162,12 @@ func TestChallengeIPaddress(t *testing.T) {
 		value, err := asn1.Marshal(zBytes[:sha256.Size])
 		require.NoError(t, err, "Expected marshaling of the keyAuth to return no error")
 
-		require.EqualValues(t, value, extValue, "Expected the challenge certificate id-pe-acmeIdentifier extension to contain the SHA-256 digest of the keyAuth")
+		require.Equal(t, value, extValue, "Expected the challenge certificate id-pe-acmeIdentifier extension to contain the SHA-256 digest of the keyAuth")
 
 		return nil
 	}
 
-	privateKey, err := rsa.GenerateKey(rand.Reader, 512)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err, "Could not generate test key")
 
 	core, err := api.New(http.DefaultClient, "lego-test", apiURL+"/dir", "", privateKey)
