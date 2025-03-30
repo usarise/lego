@@ -25,18 +25,9 @@ const (
 	flgARIWaitToRenewDuration = "ari-wait-to-renew-duration"
 	flgReuseKey               = "reuse-key"
 	flgRenewHook              = "renew-hook"
+	flgRenewHookTimeout       = "renew-hook-timeout"
 	flgNoRandomSleep          = "no-random-sleep"
 	flgForceCertDomains       = "force-cert-domains"
-)
-
-const (
-	renewEnvAccountEmail      = "LEGO_ACCOUNT_EMAIL"
-	renewEnvCertDomain        = "LEGO_CERT_DOMAIN"
-	renewEnvCertPath          = "LEGO_CERT_PATH"
-	renewEnvCertKeyPath       = "LEGO_CERT_KEY_PATH"
-	renewEnvIssuerCertKeyPath = "LEGO_ISSUER_CERT_PATH"
-	renewEnvCertPEMPath       = "LEGO_CERT_PEM_PATH"
-	renewEnvCertPFXPath       = "LEGO_CERT_PFX_PATH"
 )
 
 func createRenew() *cli.Command {
@@ -49,13 +40,13 @@ func createRenew() *cli.Command {
 			hasDomains := len(ctx.StringSlice(flgDomains)) > 0
 			hasCsr := ctx.String(flgCSR) != ""
 			if hasDomains && hasCsr {
-				log.Fatal("Please specify either --%s/-d or --%s/-c, but not both", flgDomains, flgCSR)
+				log.Fatalf("Please specify either --%s/-d or --%s/-c, but not both", flgDomains, flgCSR)
 			}
 			if !hasDomains && !hasCsr {
-				log.Fatal("Please specify --%s/-d (or --%s/-c if you already have a CSR)", flgDomains, flgCSR)
+				log.Fatalf("Please specify --%s/-d (or --%s/-c if you already have a CSR)", flgDomains, flgCSR)
 			}
 			if ctx.Bool(flgForceCertDomains) && hasCsr {
-				log.Fatal("--%s only works with --%s/-d, --%s/-c doesn't support this option.", flgForceCertDomains, flgDomains, flgCSR)
+				log.Fatalf("--%s only works with --%s/-d, --%s/-c doesn't support this option.", flgForceCertDomains, flgDomains, flgCSR)
 			}
 			return nil
 		},
@@ -102,12 +93,21 @@ func createRenew() *cli.Command {
 					" If no match, the default offered chain will be used.",
 			},
 			&cli.StringFlag{
+				Name:  flgProfile,
+				Usage: "If the CA offers multiple certificate profiles (draft-aaron-acme-profiles), choose this one.",
+			},
+			&cli.StringFlag{
 				Name:  flgAlwaysDeactivateAuthorizations,
 				Usage: "Force the authorizations to be relinquished even if the certificate request was successful.",
 			},
 			&cli.StringFlag{
 				Name:  flgRenewHook,
 				Usage: "Define a hook. The hook is executed only when the certificates are effectively renewed.",
+			},
+			&cli.DurationFlag{
+				Name:  flgRenewHookTimeout,
+				Usage: "Define the timeout for the hook execution.",
+				Value: 2 * time.Minute,
 			},
 			&cli.BoolFlag{
 				Name: flgNoRandomSleep,
@@ -133,7 +133,7 @@ func renew(ctx *cli.Context) error {
 
 	bundle := !ctx.Bool(flgNoBundle)
 
-	meta := map[string]string{renewEnvAccountEmail: account.Email}
+	meta := map[string]string{hookEnvAccountEmail: account.Email}
 
 	// CSR
 	if ctx.IsSet(flgCSR) {
@@ -238,6 +238,7 @@ func renewForDomains(ctx *cli.Context, account *Account, keyType certcrypto.KeyT
 		NotAfter:                       getTime(ctx, flgNotAfter),
 		Bundle:                         bundle,
 		PreferredChain:                 ctx.String(flgPreferredChain),
+		Profile:                        ctx.String(flgProfile),
 		AlwaysDeactivateAuthorizations: ctx.Bool(flgAlwaysDeactivateAuthorizations),
 	}
 
@@ -254,7 +255,7 @@ func renewForDomains(ctx *cli.Context, account *Account, keyType certcrypto.KeyT
 
 	addPathToMetadata(meta, domain, certRes, certsStorage)
 
-	return launchHook(ctx.String(flgRenewHook), meta)
+	return launchHook(ctx.String(flgRenewHook), ctx.Duration(flgRenewHookTimeout), meta)
 }
 
 func renewForCSR(ctx *cli.Context, account *Account, keyType certcrypto.KeyType, certsStorage *CertificatesStorage, bundle bool, meta map[string]string) error {
@@ -321,6 +322,7 @@ func renewForCSR(ctx *cli.Context, account *Account, keyType certcrypto.KeyType,
 		NotAfter:                       getTime(ctx, flgNotAfter),
 		Bundle:                         bundle,
 		PreferredChain:                 ctx.String(flgPreferredChain),
+		Profile:                        ctx.String(flgProfile),
 		AlwaysDeactivateAuthorizations: ctx.Bool(flgAlwaysDeactivateAuthorizations),
 	}
 
@@ -337,7 +339,7 @@ func renewForCSR(ctx *cli.Context, account *Account, keyType certcrypto.KeyType,
 
 	addPathToMetadata(meta, domain, certRes, certsStorage)
 
-	return launchHook(ctx.String(flgRenewHook), meta)
+	return launchHook(ctx.String(flgRenewHook), ctx.Duration(flgRenewHookTimeout), meta)
 }
 
 func needRenewal(x509Cert *x509.Certificate, domain string, days int) bool {
@@ -387,24 +389,6 @@ func getARIRenewalTime(ctx *cli.Context, cert *x509.Certificate, domain string, 
 	}
 
 	return renewalTime
-}
-
-func addPathToMetadata(meta map[string]string, domain string, certRes *certificate.Resource, certsStorage *CertificatesStorage) {
-	meta[renewEnvCertDomain] = domain
-	meta[renewEnvCertPath] = certsStorage.GetFileName(domain, certExt)
-	meta[renewEnvCertKeyPath] = certsStorage.GetFileName(domain, keyExt)
-
-	if certRes.IssuerCertificate != nil {
-		meta[renewEnvIssuerCertKeyPath] = certsStorage.GetFileName(domain, issuerExt)
-	}
-
-	if certsStorage.pem {
-		meta[renewEnvCertPEMPath] = certsStorage.GetFileName(domain, pemExt)
-	}
-
-	if certsStorage.pfx {
-		meta[renewEnvCertPFXPath] = certsStorage.GetFileName(domain, pfxExt)
-	}
 }
 
 func merge(prevDomains, nextDomains []string) []string {

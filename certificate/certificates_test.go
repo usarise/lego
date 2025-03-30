@@ -205,7 +205,7 @@ func Test_checkResponse(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, valid)
 	assert.NotNil(t, certRes)
-	assert.Equal(t, "", certRes.Domain)
+	assert.Empty(t, certRes.Domain)
 	assert.Contains(t, certRes.CertStableURL, "/certificate")
 	assert.Contains(t, certRes.CertURL, "/certificate")
 	assert.Nil(t, certRes.CSR)
@@ -255,7 +255,7 @@ func Test_checkResponse_issuerRelUp(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, valid)
 	assert.NotNil(t, certRes)
-	assert.Equal(t, "", certRes.Domain)
+	assert.Empty(t, certRes.Domain)
 	assert.Contains(t, certRes.CertStableURL, "/certificate")
 	assert.Contains(t, certRes.CertURL, "/certificate")
 	assert.Nil(t, certRes.CSR)
@@ -295,7 +295,7 @@ func Test_checkResponse_no_bundle(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, valid)
 	assert.NotNil(t, certRes)
-	assert.Equal(t, "", certRes.Domain)
+	assert.Empty(t, certRes.Domain)
 	assert.Contains(t, certRes.CertStableURL, "/certificate")
 	assert.Contains(t, certRes.CertURL, "/certificate")
 	assert.Nil(t, certRes.CSR)
@@ -387,6 +387,51 @@ func Test_Get(t *testing.T) {
 	assert.Nil(t, certRes.PrivateKey)
 	assert.Equal(t, certResponseMock, string(certRes.Certificate), "Certificate")
 	assert.Equal(t, issuerMock, string(certRes.IssuerCertificate), "IssuerCertificate")
+}
+
+func Test_checkOrderStatus(t *testing.T) {
+	testCases := []struct {
+		desc       string
+		order      acme.Order
+		requireErr require.ErrorAssertionFunc
+		expected   bool
+	}{
+		{
+			desc:       "status valid",
+			order:      acme.Order{Status: acme.StatusValid},
+			requireErr: require.NoError,
+			expected:   true,
+		},
+		{
+			desc:       "status invalid",
+			order:      acme.Order{Status: acme.StatusInvalid},
+			requireErr: require.Error,
+			expected:   false,
+		},
+		{
+			desc:       "status invalid with error",
+			order:      acme.Order{Status: acme.StatusInvalid, Error: &acme.ProblemDetails{}},
+			requireErr: require.Error,
+			expected:   false,
+		},
+		{
+			desc:       "unknown status",
+			order:      acme.Order{Status: "foo"},
+			requireErr: require.NoError,
+			expected:   false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.desc, func(t *testing.T) {
+			t.Parallel()
+
+			status, err := checkOrderStatus(acme.ExtendedOrder{Order: test.order})
+			test.requireErr(t, err)
+
+			assert.Equal(t, test.expected, status)
+		})
+	}
 }
 
 type resolverMock struct {

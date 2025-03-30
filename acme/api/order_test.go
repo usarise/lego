@@ -20,7 +20,7 @@ func TestOrderService_NewWithOptions(t *testing.T) {
 	mux, apiURL := tester.SetupFakeAPI(t)
 
 	// small value keeps test fast
-	privateKey, errK := rsa.GenerateKey(rand.Reader, 512)
+	privateKey, errK := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, errK, "Could not generate test key")
 
 	mux.HandleFunc("/newOrder", func(w http.ResponseWriter, r *http.Request) {
@@ -46,12 +46,14 @@ func TestOrderService_NewWithOptions(t *testing.T) {
 			Status:         acme.StatusValid,
 			Expires:        order.Expires,
 			Identifiers:    order.Identifiers,
+			Profile:        order.Profile,
 			NotBefore:      order.NotBefore,
 			NotAfter:       order.NotAfter,
 			Error:          order.Error,
 			Authorizations: order.Authorizations,
 			Finalize:       order.Finalize,
 			Certificate:    order.Certificate,
+			Replaces:       order.Replaces,
 		})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -26,12 +26,14 @@ const (
 	flgPath                     = "path"
 	flgHTTP                     = "http"
 	flgHTTPPort                 = "http.port"
+	flgHTTPDelay                = "http.delay"
 	flgHTTPProxyHeader          = "http.proxy-header"
 	flgHTTPWebroot              = "http.webroot"
 	flgHTTPMemcachedHost        = "http.memcached-host"
 	flgHTTPS3Bucket             = "http.s3-bucket"
 	flgTLS                      = "tls"
 	flgTLSPort                  = "tls.port"
+	flgTLSDelay                 = "tls.delay"
 	flgDNS                      = "dns"
 	flgDNSDisableCP             = "dns.disable-cp"
 	flgDNSPropagationWait       = "dns.propagation-wait"
@@ -50,6 +52,18 @@ const (
 	flgUserAgent                = "user-agent"
 )
 
+const (
+	envEAB         = "LEGO_EAB"
+	envEABHMAC     = "LEGO_EAB_HMAC"
+	envEABKID      = "LEGO_EAB_KID"
+	envEmail       = "LEGO_EMAIL"
+	envPath        = "LEGO_PATH"
+	envPFX         = "LEGO_PFX"
+	envPFXFormat   = "LEGO_PFX_FORMAT"
+	envPFXPassword = "LEGO_PFX_PASSWORD"
+	envServer      = "LEGO_SERVER"
+)
+
 func CreateFlags(defaultPath string) []cli.Flag {
 	return []cli.Flag{
 		&cli.StringSliceFlag{
@@ -60,7 +74,7 @@ func CreateFlags(defaultPath string) []cli.Flag {
 		&cli.StringFlag{
 			Name:    flgServer,
 			Aliases: []string{"s"},
-			EnvVars: []string{"LEGO_SERVER"},
+			EnvVars: []string{envServer},
 			Usage:   "CA hostname (and optionally :port). The server certificate must be trusted in order to avoid further modifications to the client.",
 			Value:   lego.LEDirectoryProduction,
 		},
@@ -72,6 +86,7 @@ func CreateFlags(defaultPath string) []cli.Flag {
 		&cli.StringFlag{
 			Name:    flgEmail,
 			Aliases: []string{"m"},
+			EnvVars: []string{envEmail},
 			Usage:   "Email used for registration and recovery contact.",
 		},
 		&cli.BoolFlag{
@@ -87,17 +102,17 @@ func CreateFlags(defaultPath string) []cli.Flag {
 		},
 		&cli.BoolFlag{
 			Name:    flgEAB,
-			EnvVars: []string{"LEGO_EAB"},
+			EnvVars: []string{envEAB},
 			Usage:   "Use External Account Binding for account registration. Requires --kid and --hmac.",
 		},
 		&cli.StringFlag{
 			Name:    flgKID,
-			EnvVars: []string{"LEGO_EAB_KID"},
+			EnvVars: []string{envEABKID},
 			Usage:   "Key identifier from External CA. Used for External Account Binding.",
 		},
 		&cli.StringFlag{
 			Name:    flgHMAC,
-			EnvVars: []string{"LEGO_EAB_HMAC"},
+			EnvVars: []string{envEABHMAC},
 			Usage:   "MAC key from External CA. Should be in Base64 URL Encoding without padding format. Used for External Account Binding.",
 		},
 		&cli.StringFlag{
@@ -112,7 +127,7 @@ func CreateFlags(defaultPath string) []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    flgPath,
-			EnvVars: []string{"LEGO_PATH"},
+			EnvVars: []string{envPath},
 			Usage:   "Directory to use for storing the data.",
 			Value:   defaultPath,
 		},
@@ -124,6 +139,11 @@ func CreateFlags(defaultPath string) []cli.Flag {
 			Name:  flgHTTPPort,
 			Usage: "Set the port and interface to use for HTTP-01 based challenges to listen on. Supported: interface:port or :port.",
 			Value: ":80",
+		},
+		&cli.DurationFlag{
+			Name:  flgHTTPDelay,
+			Usage: "Delay between the starts of the HTTP server (use for HTTP-01 based challenges) and the validation of the challenge.",
+			Value: 0,
 		},
 		&cli.StringFlag{
 			Name:  flgHTTPProxyHeader,
@@ -151,6 +171,11 @@ func CreateFlags(defaultPath string) []cli.Flag {
 			Name:  flgTLSPort,
 			Usage: "Set the port and interface to use for TLS-ALPN-01 based challenges to listen on. Supported: interface:port or :port.",
 			Value: ":443",
+		},
+		&cli.DurationFlag{
+			Name:  flgTLSDelay,
+			Usage: "Delay between the start of the TLS listener (use for TLSALPN-01 based challenges) and the validation of the challenge.",
+			Value: 0,
 		},
 		&cli.StringFlag{
 			Name:  flgDNS,
@@ -199,19 +224,19 @@ func CreateFlags(defaultPath string) []cli.Flag {
 		&cli.BoolFlag{
 			Name:    flgPFX,
 			Usage:   "Generate an additional .pfx (PKCS#12) file by concatenating the .key and .crt and issuer .crt files together.",
-			EnvVars: []string{"LEGO_PFX"},
+			EnvVars: []string{envPFX},
 		},
 		&cli.StringFlag{
 			Name:    flgPFXPass,
 			Usage:   "The password used to encrypt the .pfx (PCKS#12) file.",
 			Value:   pkcs12.DefaultPassword,
-			EnvVars: []string{"LEGO_PFX_PASSWORD"},
+			EnvVars: []string{envPFXPassword},
 		},
 		&cli.StringFlag{
 			Name:    flgPFXFormat,
 			Usage:   "The encoding format to use when encrypting the .pfx (PCKS#12) file. Supported: RC2, DES, SHA256.",
 			Value:   "RC2",
-			EnvVars: []string{"LEGO_PFX_FORMAT"},
+			EnvVars: []string{envPFXFormat},
 		},
 		&cli.IntFlag{
 			Name:  flgCertTimeout,

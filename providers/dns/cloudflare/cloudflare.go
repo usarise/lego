@@ -22,10 +22,13 @@ import (
 const (
 	envNamespace = "CLOUDFLARE_"
 
-	EnvEmail        = envNamespace + "EMAIL"
-	EnvAPIKey       = envNamespace + "API_KEY"
+	EnvEmail  = envNamespace + "EMAIL"
+	EnvAPIKey = envNamespace + "API_KEY"
+
 	EnvDNSAPIToken  = envNamespace + "DNS_API_TOKEN"
 	EnvZoneAPIToken = envNamespace + "ZONE_API_TOKEN"
+
+	EnvBaseURL = envNamespace + "BASE_URL"
 
 	EnvTTL                = envNamespace + "TTL"
 	EnvPropagationTimeout = envNamespace + "PROPAGATION_TIMEOUT"
@@ -53,6 +56,8 @@ type Config struct {
 	AuthToken string
 	ZoneToken string
 
+	BaseURL string
+
 	TTL                int
 	PropagationTimeout time.Duration
 	PollingInterval    time.Duration
@@ -64,7 +69,7 @@ func NewDefaultConfig() *Config {
 	return &Config{
 		TTL:                env.GetOneWithFallback(EnvTTL, minTTL, strconv.Atoi, altEnvName(EnvTTL)),
 		PropagationTimeout: env.GetOneWithFallback(EnvPropagationTimeout, 2*time.Minute, env.ParseSecond, altEnvName(EnvPropagationTimeout)),
-		PollingInterval:    env.GetOneWithFallback(EnvPollingInterval, 2*time.Second, env.ParseSecond, altEnvName(EnvPollingInterval)),
+		PollingInterval:    env.GetOneWithFallback(EnvPollingInterval, dns01.DefaultPollingInterval, env.ParseSecond, altEnvName(EnvPollingInterval)),
 		HTTPClient: &http.Client{
 			Timeout: env.GetOneWithFallback(EnvHTTPTimeout, 30*time.Second, env.ParseSecond, altEnvName(EnvHTTPTimeout)),
 		},
@@ -114,6 +119,7 @@ func NewDNSProvider() (*DNSProvider, error) {
 	config.AuthKey = values[EnvAPIKey]
 	config.AuthToken = values[EnvDNSAPIToken]
 	config.ZoneToken = values[EnvZoneAPIToken]
+	config.BaseURL = env.GetOrFile(EnvBaseURL)
 
 	return NewDNSProviderConfig(config)
 }
@@ -205,7 +211,7 @@ func (d *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 
 	err = d.client.DeleteDNSRecord(context.Background(), zoneID, recordID)
 	if err != nil {
-		log.Printf("cloudflare: failed to delete TXT record: %w", err)
+		log.Printf("cloudflare: failed to delete TXT record: %v", err)
 	}
 
 	// Delete record ID from map
