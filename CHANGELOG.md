@@ -1,5 +1,49 @@
 # Changelog
 
+## [v4.25.0](https://github.com/go-acme/lego/releases/tag/v4.25.0) (2025-07-21)
+
+The binary size of this release is about ~50% smaller compared to previous releases.
+
+This will also reduce the module cache usage by 320 MB (this will only affect users of lego as a library or who build lego themselves).
+
+### Added
+
+- **[dnsprovider]** Add DNS provider for ZoneEdit
+- **[cli]** Add an option to define dynamically the renew date
+- **[lib,cli]** Add an option to disable common name in CSR
+
+### Changed
+- 
+- **[dnsprovider]** vinyldns: add an option to add quotes around the TXT record value
+- **[dnsprovider]** ionos: increase default propagation timeout
+
+### Fixed
+
+- **[cli]** fix: enforce domain into renewal command
+
+## [v4.24.0](https://github.com/go-acme/lego/releases/tag/v4.24.0) (2025-07-07)
+
+### Added
+
+- **[dnsprovider]** Add DNS provider for Azion
+- **[dnsprovider]** Add DNS provider for DynDnsFree.de
+- **[dnsprovider]** Add DNS provider for ConoHa v3
+- **[dnsprovider]** Add DNS provider for RU Center
+- **[dnsprovider]** gcloud: add service account impersonation
+
+### Changed
+
+- **[dnsprovider]** pdns: improve error messages
+- **[dnsprovider]** cloudflare: add quotation marks to TXT record
+- **[dnsprovider]** googledomains: provider deprecation
+- **[dnsprovider]** mijnhost: improve record filter
+
+### Fixed
+
+- **[dnsprovider]** exoscale: fix find record
+- **[dnsprovider]** nicmanager: fix mode env var name and value
+- **[lib,cli]** Check order identifiers difference between client and server
+
 ## [v4.23.1](https://github.com/go-acme/lego/releases/tag/v4.23.1) (2025-04-16)
 
 Due to an error related to Snapcraft, some artifacts of the v4.23.0 release have not been published.

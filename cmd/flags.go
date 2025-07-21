@@ -17,6 +17,7 @@ const (
 	flgAcceptTOS                = "accept-tos"
 	flgEmail                    = "email"
 	flgNoEmail                  = "no-email"
+	flgDisableCommonName        = "disable-cn"
 	flgCSR                      = "csr"
 	flgEAB                      = "eab"
 	flgKID                      = "kid"
@@ -94,6 +95,11 @@ func CreateFlags(defaultPath string) []cli.Flag {
 			Aliases: []string{"M"},
 			EnvVars: []string{"LEGO_NO_EMAIL"},
 			Usage:   "Create an ACME request without including an email address.",
+		},
+		&cli.BoolFlag{
+			Name:    flgDisableCommonName,
+			EnvVars: []string{flgDisableCommonName},
+			Usage:   "Disable the use of the common name in the CSR.",
 		},
 		&cli.StringFlag{
 			Name:    flgCSR,

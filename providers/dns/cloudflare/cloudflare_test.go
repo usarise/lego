@@ -1,10 +1,12 @@
 package cloudflare
 
 import (
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/go-acme/lego/v4/platform/tester"
+	"github.com/go-acme/lego/v4/platform/tester/servermock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -232,22 +234,17 @@ func TestNewDNSProviderConfig(t *testing.T) {
 		},
 		{
 			desc:     "missing credentials",
-			expected: "cloudflare: invalid credentials: key & email must not be empty",
+			expected: "cloudflare: invalid credentials: authEmail, authKey or authToken must be set",
 		},
 		{
 			desc:     "missing email",
 			authKey:  "123",
-			expected: "cloudflare: invalid credentials: key & email must not be empty",
+			expected: "cloudflare: invalid credentials: authEmail and authKey must be set together",
 		},
 		{
 			desc:      "missing api key",
 			authEmail: "test@example.com",
-			expected:  "cloudflare: invalid credentials: key & email must not be empty",
-		},
-		{
-			desc:      "missing api token, fallback to api key/email",
-			authToken: "",
-			expected:  "cloudflare: invalid credentials: key & email must not be empty",
+			expected:  "cloudflare: invalid credentials: authEmail and authKey must be set together",
 		},
 	}
 
@@ -297,5 +294,65 @@ func TestLiveCleanUp(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	err = provider.CleanUp(envTest.GetDomain(), "", "123d==")
+	require.NoError(t, err)
+}
+
+func mockBuilder() *servermock.Builder[*DNSProvider] {
+	return servermock.NewBuilder(
+		func(server *httptest.Server) (*DNSProvider, error) {
+			config := NewDefaultConfig()
+			config.AuthEmail = "foo@example.com"
+			config.AuthKey = "secret"
+			config.BaseURL = server.URL
+
+			return NewDNSProviderConfig(config)
+		},
+		servermock.CheckHeader().
+			WithRegexp("User-Agent", `goacme-lego/[0-9.]+ \(.+\)`).
+			With("X-Auth-Email", "foo@example.com").
+			With("X-Auth-Key", "secret"),
+	)
+}
+
+func TestDNSProvider_Present(t *testing.T) {
+	provider := mockBuilder().
+		// https://developers.cloudflare.com/api/resources/zones/methods/list/
+		Route("GET /zones",
+			servermock.ResponseFromInternal("zones.json"),
+			servermock.CheckQueryParameter().Strict().
+				With("name", "example.com").
+				With("per_page", "50")).
+		// https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/create/
+		Route("POST /zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records",
+			servermock.ResponseFromInternal("create_record.json"),
+			servermock.CheckHeader().
+				WithContentType("application/json"),
+			servermock.CheckRequestJSONBodyFromInternal("create_record-request.json")).
+		Build(t)
+
+	err := provider.Present("example.com", "abc", "123d==")
+	require.NoError(t, err)
+}
+
+func TestDNSProvider_CleanUp(t *testing.T) {
+	provider := mockBuilder().
+		// https://developers.cloudflare.com/api/resources/zones/methods/list/
+		Route("GET /zones",
+			servermock.ResponseFromInternal("zones.json"),
+			servermock.CheckQueryParameter().Strict().
+				With("name", "example.com").
+				With("per_page", "50")).
+		// https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/delete/
+		Route("DELETE /zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records/xxx",
+			servermock.ResponseFromInternal("delete_record.json")).
+		Build(t)
+
+	token := "abc"
+
+	provider.recordIDsMu.Lock()
+	provider.recordIDs["abc"] = "xxx"
+	provider.recordIDsMu.Unlock()
+
+	err := provider.CleanUp("example.com", token, "123d==")
 	require.NoError(t, err)
 }
