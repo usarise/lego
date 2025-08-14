@@ -11,6 +11,8 @@ import (
 	"github.com/go-acme/lego/v4/acme/api"
 	"github.com/go-acme/lego/v4/challenge"
 	"github.com/go-acme/lego/v4/platform/tester"
+	"github.com/go-acme/lego/v4/platform/tester/dnsmock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,12 +33,12 @@ func (p *providerTimeoutMock) CleanUp(domain, token, keyAuth string) error { ret
 func (p *providerTimeoutMock) Timeout() (time.Duration, time.Duration)     { return p.timeout, p.interval }
 
 func TestChallenge_PreSolve(t *testing.T) {
-	apiURL, client := tester.MockACMEServer().BuildHTTPS(t)
+	server := tester.MockACMEServer().BuildHTTPS(t)
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err)
 
-	core, err := api.New(client, "lego-test", apiURL+"/dir", "", privateKey)
+	core, err := api.New(server.Client(), "lego-test", server.URL+"/dir", "", privateKey)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -113,12 +115,16 @@ func TestChallenge_PreSolve(t *testing.T) {
 }
 
 func TestChallenge_Solve(t *testing.T) {
-	apiURL, client := tester.MockACMEServer().BuildHTTPS(t)
+	useAsNameserver(t, dnsmock.NewServer().
+		Query("_acme-challenge.example.com. CNAME", dnsmock.Noop).
+		Build(t))
+
+	server := tester.MockACMEServer().BuildHTTPS(t)
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err)
 
-	core, err := api.New(client, "lego-test", apiURL+"/dir", "", privateKey)
+	core, err := api.New(server.Client(), "lego-test", server.URL+"/dir", "", privateKey)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -200,12 +206,12 @@ func TestChallenge_Solve(t *testing.T) {
 }
 
 func TestChallenge_CleanUp(t *testing.T) {
-	apiURL, client := tester.MockACMEServer().BuildHTTPS(t)
+	server := tester.MockACMEServer().BuildHTTPS(t)
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
 	require.NoError(t, err)
 
-	core, err := api.New(client, "lego-test", apiURL+"/dir", "", privateKey)
+	core, err := api.New(server.Client(), "lego-test", server.URL+"/dir", "", privateKey)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -279,4 +285,56 @@ func TestChallenge_CleanUp(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetChallengeInfo(t *testing.T) {
+	useAsNameserver(t, dnsmock.NewServer().
+		Query("_acme-challenge.example.com. CNAME", dnsmock.Noop).
+		Build(t))
+
+	info := GetChallengeInfo("example.com", "123")
+
+	expected := ChallengeInfo{
+		FQDN:          "_acme-challenge.example.com.",
+		EffectiveFQDN: "_acme-challenge.example.com.",
+		Value:         "pmWkWSBCL51Bfkhn79xPuKBKHz__H6B-mY6G9_eieuM",
+	}
+
+	assert.Equal(t, expected, info)
+}
+
+func TestGetChallengeInfo_CNAME(t *testing.T) {
+	useAsNameserver(t, dnsmock.NewServer().
+		Query("_acme-challenge.example.com. CNAME", dnsmock.CNAME("example.org.")).
+		Query("example.org. CNAME", dnsmock.Noop).
+		Build(t))
+
+	info := GetChallengeInfo("example.com", "123")
+
+	expected := ChallengeInfo{
+		FQDN:          "_acme-challenge.example.com.",
+		EffectiveFQDN: "example.org.",
+		Value:         "pmWkWSBCL51Bfkhn79xPuKBKHz__H6B-mY6G9_eieuM",
+	}
+
+	assert.Equal(t, expected, info)
+}
+
+func TestGetChallengeInfo_CNAME_disabled(t *testing.T) {
+	useAsNameserver(t, dnsmock.NewServer().
+		// Never called when the env var works.
+		Query("_acme-challenge.example.com. CNAME", dnsmock.CNAME("example.org.")).
+		Build(t))
+
+	t.Setenv("LEGO_DISABLE_CNAME_SUPPORT", "true")
+
+	info := GetChallengeInfo("example.com", "123")
+
+	expected := ChallengeInfo{
+		FQDN:          "_acme-challenge.example.com.",
+		EffectiveFQDN: "_acme-challenge.example.com.",
+		Value:         "pmWkWSBCL51Bfkhn79xPuKBKHz__H6B-mY6G9_eieuM",
+	}
+
+	assert.Equal(t, expected, info)
 }
